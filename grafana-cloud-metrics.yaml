@@ -286,6 +286,7 @@ resources:
             cat > /root/.grafanizerrc << EOL
             datasource:
               username: rax_username
+              tenant: rax_tenant
               api_key: rax_apikey
               url: https://monitoring.api.rackspacecloud.com/v1.0
             pool_size: 100
