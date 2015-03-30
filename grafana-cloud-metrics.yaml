@@ -296,7 +296,7 @@ resources:
             mkdir /var/log/grafanizer
             pip install eventlet cerberus elasticsearch pyparsing
             git -C /root clone https://github.com/absalon-james/grafanizer.git
-            cp /root/grafanizer/sample-grafana-templates/default.js /usr/share/nginx/grafana/app/dashboards/default.js
+            cp /root/grafanizer/sample_grafana_templates/default.js /usr/share/nginx/grafana/app/dashboards/default.js
             echo "* */12 * * * root python /root/grafanizer/grafanizer" > /etc/cron.d/grafanizer
             python /root/grafanizer/grafanizer
 
