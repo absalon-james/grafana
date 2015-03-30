@@ -233,7 +233,7 @@ resources:
                 search: {
                   max_results: 20
                 },
-                default_route: '/dashboard/file/default.json',
+                default_route: '/dashboard/script/default.js',
                 unsaved_changes_warning: true,
                 playlist_timespan: '1m',
                 admin: {
@@ -296,6 +296,7 @@ resources:
             mkdir /var/log/grafanizer
             pip install eventlet cerberus elasticsearch pyparsing
             git -C /root clone https://github.com/absalon-james/grafanizer.git
+            cp /root/grafanizer/sample-grafana-templates/default.js /usr/share/nginx/grafana/app/dashboards/default.js
             echo "* */12 * * * root python /root/grafanizer/grafanizer" > /etc/cron.d/grafanizer
             python /root/grafanizer/grafanizer
 
