@@ -28,6 +28,7 @@ parameter_groups:
       - flavor
       - image
       - host_name
+      - keyname
       - es_version
       - gr_version
       - rax_tenant
@@ -70,6 +71,10 @@ parameters:
     type: string
     description: 'Server hostname'
     label: 'Server hostname'
+  keyname:
+    type: string
+    description: Name of keypair for ssh access
+    label: Keyname
   apache_auth_user:
     default: grafana
     type: string
@@ -102,9 +107,6 @@ parameters:
     label: 'API key'
 
 outputs:
-  private_key:
-    description: 'SSH private key'
-    value: { get_attr: [ssh_key, private_key ] }
   apache_auth_user:
     description: 'Grafana auth user.'
     value:
@@ -121,7 +123,7 @@ resources:
     type: 'Rackspace::Cloud::Server'
     depends_on: [ apache_auth_password ]
     properties:
-      key_name: { get_resource: ssh_key }
+      key_name: { get_param: keyname }
       flavor: { get_param: flavor }
       name: { get_param: [host_name, value] }
       image: { get_param: image }
@@ -169,10 +171,20 @@ resources:
             upstream elasticsearch {
               server 127.0.0.1:9200;
             }
+
             server {
               listen 80;
+              return 301 https://\$host\$request_uri;
+            }
+            server {
+              listen 443;
               auth_basic 'Restricted';
               auth_basic_user_file /etc/nginx/.htpasswd;
+
+              ssl on;
+              ssl_certificate /etc/nginx/ssl/grafana.crt;
+              ssl_certificate_key /etc/nginx/ssl/grafana.key;
+
               location /graphite/ {
                 rewrite /graphite/(.*) /\$1 break;
                 proxy_pass http://graphite;
@@ -190,6 +202,10 @@ resources:
               }
             }
             EOL
+            mkdir /etc/nginx/ssl
+            chmod 700 /etc/nginx/ssl
+            HOST_IP="$(ifconfig eth0 | awk '/inet addr/{print substr($2,6)}')"
+            openssl req -x509 -nodes -newkey rsa:2048 -keyout /etc/nginx/ssl/grafana.key -out /etc/nginx/ssl/grafana.crt -days 999 -subj "/CN=${HOST_IP}"
             ln -s /etc/nginx/sites-available/grafana /etc/nginx/sites-enabled/grafana
             /etc/init.d/nginx restart
             pip install graphite-api gunicorn
@@ -221,11 +237,11 @@ resources:
                 datasources: {
                   graphite: {
                     type: 'graphite',
-                    url: 'http://'+window.location.hostname+'/graphite',
+                    url: 'https://'+window.location.hostname+'/graphite',
                   },
                   elasticsearch: {
                     type: 'elasticsearch',
-                    url: 'http://'+window.location.hostname+'/elasticsearch',
+                    url: 'https://'+window.location.hostname+'/elasticsearch',
                     index: 'grafana-dash',
                     grafanaDB: true,
                   }
@@ -308,12 +324,6 @@ resources:
             rax_tenant: { get_param: rax_tenant }
             rax_username: { get_param: rax_username }
             rax_apikey: { get_param: rax_apikey }
-  ssh_key:
-    type: 'OS::Nova::KeyPair'
-    properties:
-      name:
-        get_param: 'OS::stack_id'
-      save_private_key: true
   apache_auth_password:
     type: 'OS::Heat::RandomString'
     properties:
