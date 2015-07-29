@@ -130,7 +130,9 @@ resources:
           template: |
             #!/bin/bash
             sleep 120
-            curl -L http://bootstrap.saltstack.org | sh -s
+            add-apt-repository ppa:saltstack/salt
+            apt-get update
+            apt-get install -y salt-minion
             cat > /etc/salt/grains << EOL
             roles:
               - grafana
